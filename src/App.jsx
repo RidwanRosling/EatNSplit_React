@@ -1,29 +1,11 @@
 import { useState } from "react";
-const initialFriends = [
-  {
-    id: 118836,
-    name: "Clark",
-    image: "https://i.pravatar.cc/48?u=118836",
-    balance: -7,
-  },
-  {
-    id: 933372,
-    name: "Sarah",
-    image: "https://i.pravatar.cc/48?u=933372",
-    balance: 20,
-  },
-  {
-    id: 499476,
-    name: "Anthony",
-    image: "https://i.pravatar.cc/48?u=499476",
-    balance: 0,
-  },
-];
-
+import initialFriends from "./data";
 export default function App() {
+  const [allFriends, setAllFriends] = useState(initialFriends);
   const [showFriends, setShowFriends] = useState(false);
   const [friendName, setFriendName] = useState("");
   const [newImg, setNewImg] = useState("https://i.pravatar.cc/48?u=49");
+  const [selectedFriend, setSelectedFriend] = useState(null);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -47,19 +29,38 @@ export default function App() {
       balance: 0,
     };
 
-    initialFriends.push(newFriend);
+    setAllFriends((prevState) => [...prevState, newFriend]);
     console.log(newFriend);
     setFriendName("");
     setNewImg("https://i.pravatar.cc/48?u=49");
+    setShowFriends(false);
   }
 
   function handleShowFriends() {
+    if (selectedFriend) {
+      setSelectedFriend(null);
+    }
     setShowFriends((prevState) => !prevState);
+  }
+
+  function handleSelected(friend) {
+    if (selectedFriend?.id === friend.id) {
+      setSelectedFriend(null);
+      return;
+    }
+    if (showFriends === true) {
+      setShowFriends(false);
+    }
+    setSelectedFriend(friend);
   }
   return (
     <div className="app">
       <div className="sidebar">
-        <FriendList friends={initialFriends} />
+        <FriendList
+          friends={allFriends}
+          selectedFriend={selectedFriend}
+          onSelected={handleSelected}
+        />
         {showFriends && (
           <FormAddFriend
             newFriend={friendName}
@@ -75,25 +76,38 @@ export default function App() {
         </Button>
       </div>
 
-      <FormSplitBill />
+      {selectedFriend && (
+        <FormSplitBill
+          selectedFriend={selectedFriend}
+          allFriends={allFriends}
+        />
+      )}
     </div>
   );
 }
 
-function FriendList() {
-  const friends = initialFriends;
+function FriendList({ friends, selectedFriend, onSelected }) {
   return (
     <ul>
       {friends.map((friend) => (
-        <Friends friend={friend} key={friend.id} />
+        <Friends
+          friend={friend}
+          key={friend.id}
+          selectedFriend={selectedFriend}
+          onSelected={onSelected}
+        />
       ))}
     </ul>
   );
 }
 
-function Friends({ friend }) {
+function Friends({ friend, onSelected, selectedFriend }) {
+  // its optional chaining you must use "?" to avoid error
+  // when selectedFriend is null
+  const isSelected = selectedFriend?.id === friend.id;
+
   return (
-    <li>
+    <li className={isSelected ? "selected" : ""}>
       <img src={friend.image} alt={friend.name} />
       <h3>{friend.name}</h3>
 
@@ -102,13 +116,16 @@ function Friends({ friend }) {
           You owe {friend.name} {Math.abs(friend.balance)}$
         </p>
       )}
+
       {friend.balance > 0 && (
         <p className="green">
           {friend.name} owes you {Math.abs(friend.balance)}$
         </p>
       )}
       {friend.balance === 0 && <p>You and {friend.name} are even</p>}
-      <Button>Select</Button>
+      <Button onClick={() => onSelected(friend)}>
+        {isSelected ? "Close" : "Select"}
+      </Button>
     </li>
   );
 }
@@ -149,10 +166,10 @@ function FormAddFriend({
   );
 }
 
-function FormSplitBill() {
+function FormSplitBill({ selectedFriend }) {
   return (
     <form className="form-split-bill">
-      <h2>Split a bill with X</h2>
+      <h2>Split a bill with {selectedFriend.name}</h2>
 
       <label>💵 Bill value</label>
       <input type="text" />
@@ -160,7 +177,7 @@ function FormSplitBill() {
       <label>🤸‍♂️ Your expense</label>
       <input type="text" />
 
-      <label>🤸‍♂️🤸‍♂️ X's expense</label>
+      <label>🤸‍♂️🤸‍♂️ {selectedFriend.name} expense</label>
       <input type="text" disabled />
 
       <label>💁‍♂️ Who is paying the bill?</label>
