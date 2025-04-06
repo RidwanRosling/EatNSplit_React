@@ -173,27 +173,22 @@ function FormAddFriend({
 function FormSplitBill({ selectedFriend, onSplitBill }) {
   const [bill, setBill] = useState("");
   const [paidByUser, setPaidByUser] = useState("");
-  const paidByFriend = bill ? bill - paidByUser : 0;
+  // for the value not to be negative
+  const paidByFriend =
+    bill && paidByUser ? Number(bill) - Number(paidByUser) : 0;
   const [whoIsPaying, setWhoIsPaying] = useState("user");
+
   function handleSubmit(e) {
     e.preventDefault();
     if (!bill || !paidByUser) {
       alert("Please enter a value");
+      onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
       return;
     }
     if (paidByUser > bill) {
       alert("You can't pay more than the bill");
       return;
     }
-
-    if (whoIsPaying === "user") {
-      selectedFriend.balance += paidByFriend;
-    }
-    if (whoIsPaying === "friend") {
-      selectedFriend.balance -= paidByUser;
-    }
-    selectedFriend;
-
     onSplitBill(selectedFriend);
   }
 
@@ -205,14 +200,35 @@ function FormSplitBill({ selectedFriend, onSplitBill }) {
       <input
         type="text"
         value={bill}
-        onChange={(e) => setBill(Number(e.target.value))}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // Hapus semua non-digit kecuali titik (untuk desimal)
+          value = value.replace(/^0+(?!$)/, "");
+          if (!/^\d*\.?\d*$/.test(value)) return;
+
+          setBill(value);
+        }}
       />
 
       <label>🤸‍♂️ Your expense</label>
       <input
         type="text"
         value={paidByUser}
-        onChange={(e) => setPaidByUser(Number(e.target.value))}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          value = value.replace(/^0+(?!$)/, "");
+          if (!/^\d*\.?\d*$/.test(value)) return;
+
+          const numeric = Number(value);
+          if (numeric > Number(bill)) {
+            alert("Your expense tidak boleh melebihi nilai bill");
+            return;
+          }
+
+          setPaidByUser(value);
+        }}
       />
 
       <label>🤸‍♂️🤸‍♂️ {selectedFriend.name} expense</label>
@@ -221,16 +237,16 @@ function FormSplitBill({ selectedFriend, onSplitBill }) {
         disabled
         value={paidByFriend}
         onChange={(e) =>
-          setPaidByUser(
-            Number(e.target.value) > bill ? paidByUser : e.target.value
-          )
+          setPaidByUser(Number(e.target.value)) > bill
+            ? paidByUser
+            : Number(e.target.value)
         }
       />
 
       <label>💁‍♂️ Who is paying the bill?</label>
       <select
         value={whoIsPaying}
-        onChange={(e) => setWhoIsPaying(Number(e.target.value))}
+        onChange={(e) => setWhoIsPaying(e.target.value)} // Jangan pakai Number!
       >
         <option value="user">You</option>
         <option value="friend">{selectedFriend.name}</option>
