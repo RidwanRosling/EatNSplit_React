@@ -54,8 +54,19 @@ export default function App() {
     setSelectedFriend(friend);
   }
 
-  function handleSplitBill(friend) {
-    setSelectedFriend(friend);
+  function handleSplitBill(value) {
+    console.log(value);
+    setAllFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === selectedFriend.id
+          ? {
+              ...friend,
+              balance: friend.balance + value,
+            }
+          : friend
+      )
+    );
+    setSelectedFriend(null);
   }
   return (
     <div className="app">
@@ -173,23 +184,15 @@ function FormAddFriend({
 function FormSplitBill({ selectedFriend, onSplitBill }) {
   const [bill, setBill] = useState("");
   const [paidByUser, setPaidByUser] = useState("");
-  // for the value not to be negative
   const paidByFriend =
     bill && paidByUser ? Number(bill) - Number(paidByUser) : 0;
   const [whoIsPaying, setWhoIsPaying] = useState("user");
+  // for the value not to be negative
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!bill || !paidByUser) {
-      alert("Please enter a value");
-      onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
-      return;
-    }
-    if (paidByUser > bill) {
-      alert("You can't pay more than the bill");
-      return;
-    }
-    onSplitBill(selectedFriend);
+    if (!bill || !paidByUser) return;
+    onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
   }
 
   return (
